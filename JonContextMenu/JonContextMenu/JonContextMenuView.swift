@@ -234,7 +234,7 @@ class JonContextMenuView:UIView {
     /// Calculates the clockwise angle that each of the menu items should appear based on the given start angle
     private func positiveQuorterAngle(startAngle: CGFloat) {
         properties.items.forEach({ item in
-            let index = CGFloat(properties.items.index(of: item)!)
+            let index = CGFloat(properties.items.firstIndex(of: item)!)
             item.angle = (startAngle + 45 * index)
         })
     }
@@ -242,7 +242,7 @@ class JonContextMenuView:UIView {
     /// Calculates the counterclockwise angle that each of the menu items should appear based on the given start angle
     private func negativeQuorterAngle(startAngle: CGFloat) {
         properties.items.forEach({ item in
-            let index = CGFloat(properties.items.index(of: item)!)
+            let index = CGFloat(properties.items.firstIndex(of: item)!)
             item.angle = (startAngle - 45 * index)
         })
     }

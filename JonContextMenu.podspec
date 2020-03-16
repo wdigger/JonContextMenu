@@ -11,8 +11,6 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = "9.0"
   s.source       = { :git => "https://github.com/jonSurrey/JonContextMenu.git", :tag => "#{s.version}"}
   s.source_files  = "JonContextMenu/JonContextMenu/**/*.{swift}"
-s.swift_version = "4.1" 
-s.requires_arc = true
-
-
+  s.swift_version = "5.0"
+  s.requires_arc = true
 end
