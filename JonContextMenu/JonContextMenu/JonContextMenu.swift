@@ -16,6 +16,8 @@ import UIKit.UIGestureRecognizerSubclass
     func menuItemWasSelected(item:JonItem)
     func menuItemWasActivated(item:JonItem)
     func menuItemWasDeactivated(item:JonItem)
+    func menuShouldBeShown(atPoint point: CGPoint) -> Bool
+    func menuGetItems(atPoint point: CGPoint) -> [JonItem]
 }
 
 @objc open class JonContextMenu:NSObject{
@@ -25,12 +27,6 @@ import UIKit.UIGestureRecognizerSubclass
     
     /// The delegate to notify the JonContextMenu host when an item is selected
     var delegate:JonContextMenuDelegate?
-    
-    /// The Background's alpha of the view
-    var backgroundAlpha:CGFloat = 0.9
-    
-    /// The Background's colour of the view
-    var backgroundColor:UIColor = .white
     
     /// The items' buttons default colour
     var buttonsDefaultColor:UIColor = .white
@@ -53,9 +49,6 @@ import UIKit.UIGestureRecognizerSubclass
     /// The colour of the touch location view
     var touchPointColor:UIColor = UIColor.init(hexString: "#212121") // Dark Gray
     
-    /// The view selected by the user
-    var highlightedView:UIView!
-    
     override public init(){
         super.init()
     }
@@ -69,13 +62,6 @@ import UIKit.UIGestureRecognizerSubclass
     /// Sets the delegate for the JonContextMenu
     @objc open func setDelegate(_ delegate: JonContextMenuDelegate?)->JonContextMenu{
         self.delegate = delegate
-        return self
-    }
-    
-    /// Sets the background of the JonContextMenu
-    @objc open func setBackgroundColorTo(_ backgroundColor: UIColor, withAlpha alpha:CGFloat = 0.9)->JonContextMenu{
-        self.backgroundAlpha = alpha
-        self.backgroundColor = backgroundColor
         return self
     }
     
@@ -135,7 +121,7 @@ import UIKit.UIGestureRecognizerSubclass
         private var currentItem:JonItem?
         
         /// The JonContextMenu view
-        private var contextMenuView:JonContextMenuView!
+        private var contextMenuView:JonContextMenuView?
         
         /// The properties configuration to add to the JonContextMenu view
         private var properties:JonContextMenu!
@@ -151,15 +137,6 @@ import UIKit.UIGestureRecognizerSubclass
             self.window     = window
             self.properties = properties
             addTarget(self, action: #selector(setupTouchAction))
-        }
-        
-        /// Gets a copy of the touched view to add to the Window
-        private func getTouchedView(){
-            let highlightedView   = self.view!.snapshotView(afterScreenUpdates: true)!
-            highlightedView.frame = self.view!.superview!.convert(self.view!.frame, to: nil)
-            highlightedView.borderWidth = 0.5
-            highlightedView.borderColor = .lightGray
-            properties.highlightedView = highlightedView
         }
         
         /// Handle the touch events on the view
@@ -181,7 +158,6 @@ import UIKit.UIGestureRecognizerSubclass
         
         /// Trigger the events for when the touch begins
         private func longPressBegan(on location:CGPoint) {
-            getTouchedView()
             showMenu(on: location)
         }
         
@@ -202,13 +178,13 @@ import UIKit.UIGestureRecognizerSubclass
         private func longPressMoved(to location:CGPoint) {
             if let currentItem = currentItem, currentItem.frame.contains(location){
                 if !currentItem.isActive{
-                    contextMenuView.activate(currentItem)
+                    contextMenuView?.activate(currentItem)
                     properties.delegate?.menuItemWasActivated(item: currentItem)
                 }
             }
             else{
                 if let currentItem = currentItem, currentItem.isActive{
-                    contextMenuView.deactivate(currentItem)
+                    contextMenuView?.deactivate(currentItem)
                     properties.delegate?.menuItemWasDeactivated(item: currentItem)
                 }
                 for item in properties.items{
@@ -220,24 +196,47 @@ import UIKit.UIGestureRecognizerSubclass
             }
         }
         
+        func cancel() {
+            properties.items = []
+            self.isEnabled = false;
+            self.isEnabled = true;
+        }
+        
         /// Creates the JonContextMenu view and adds to the Window
-        private func showMenu(on location:CGPoint){
+        private func showMenu(on location: CGPoint) {
+            if let delegate = properties.delegate {
+                if !delegate.menuShouldBeShown(atPoint: location) {
+                    cancel()
+                    return
+                }
+            }
+
+            if properties.items.isEmpty {
+                properties.items = properties.delegate?.menuGetItems(atPoint: location) ?? []
+                if properties.items.isEmpty {
+                    cancel()
+                    return
+                }
+            }
             currentItem     = nil
             contextMenuView = JonContextMenuView(properties, touchPoint: location)
             
-            window.addSubview(contextMenuView)
+            window.addSubview(contextMenuView!)
             properties.delegate?.menuOpened()
         }
         
         /// Removes the JonContextMenu view from the Window
         private func dismissMenu(){
-            if let currentItem = currentItem{
-                contextMenuView.deactivate(currentItem)
+            if let contextMenuView = contextMenuView {
+                if let currentItem = currentItem{
+                    contextMenuView.deactivate(currentItem)
+                }
+        
+                contextMenuView.removeFromSuperview()
+                properties.delegate?.menuClosed()
+                self.contextMenuView = nil
+                self.properties.items = []
             }
-    
-            contextMenuView.removeFromSuperview()
-            properties.delegate?.menuClosed()
-            contextMenuView = nil
         }
     }
 }

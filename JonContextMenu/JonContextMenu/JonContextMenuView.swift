@@ -30,16 +30,6 @@ class JonContextMenuView:UIView {
         return label
     }()
     
-    /// The background of the view
-    let background: UIView = {
-        let view = UIView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
-    
-    /// The view that represents the users's touch point
-    var touchPointView:UIView!
-    
     /// The properties configuration for the JonContextMenuView
     private var properties:JonContextMenu!
     
@@ -71,7 +61,6 @@ class JonContextMenuView:UIView {
         self.properties = properties
         self.touchPoint = touchPoint
         
-        touchPointView   = makeTouchPoint()
         currentDirection = calculateDirections(properties.items[0].wrapper.frame.width)
         
         addSubviews()
@@ -81,17 +70,6 @@ class JonContextMenuView:UIView {
     
     /// Add the background, touch point and title label to the ContextMenuView
     private func addSubviews(){
-        
-        self.addSubview(background)
-        NSLayoutConstraint.activate([
-            background.topAnchor     .constraint(equalTo: self.topAnchor     ),
-            background.bottomAnchor  .constraint(equalTo: self.bottomAnchor  ),
-            background.leadingAnchor .constraint(equalTo: self.leadingAnchor ),
-            background.trailingAnchor.constraint(equalTo: self.trailingAnchor)
-        ])
-        
-        self.addSubview(properties.highlightedView)
-        self.addSubview(touchPointView)
         self.addSubview(label)
     }
     
@@ -102,15 +80,6 @@ class JonContextMenuView:UIView {
         properties.items.forEach({
             $0.setItemColorTo(properties.buttonsDefaultColor, iconColor: properties.iconsDefaultColor)
         })
-        
-        /// Sets the touch point colour
-        touchPointView.borderColor = properties.touchPointColor
-        
-        /// Sets the view's background alpha
-        background.alpha = properties.backgroundAlpha
-        
-        /// Sets the views's background colour
-        background.backgroundColor = properties.backgroundColor
         
         /// Sets the items' title colour
         label.textColor = properties.itemsTitleColor
@@ -132,17 +101,6 @@ class JonContextMenuView:UIView {
         }
     }
     
-    /// Creates the touch point view
-    private func makeTouchPoint()->UIView{
-        let view = UIView(frame: CGRect(x: 0, y: 0, width: 45, height: 45))
-        view.center = touchPoint
-        view.backgroundColor = .clear
-        view.fullCircle = true
-        view.borderWidth = 3
-        view.alpha = 0.1
-        return view
-    }
-    
     /// Sets the menu items' position to the user's touch position
     private func resetItemsPosition() {
         properties.items.forEach({
@@ -152,15 +110,15 @@ class JonContextMenuView:UIView {
     
     /// Calculates the distance from the user's touch location to the menu items
     private func calculateDistanceToItem() {
-        xDistanceToItem = touchPointView.frame.width/2  + distanceToTouchPoint + CGFloat(properties.items[0].frame.width/2)
-        yDistanceToItem = touchPointView.frame.height/2 + distanceToTouchPoint + CGFloat(properties.items[0].frame.height/2)
+        xDistanceToItem = 20 + distanceToTouchPoint + CGFloat(properties.items[0].frame.width/2)
+        yDistanceToItem = 20 + distanceToTouchPoint + CGFloat(properties.items[0].frame.height/2)
     }
     
     /// Calculates which direction the menu items shoud appear
     private func calculateDirections(_ menuItemWidth: CGFloat) -> (Direction, Direction) {
         
-        let touchWidth  = distanceToTouchPoint + menuItemWidth + touchPointView.frame.width
-        let touchHeight = distanceToTouchPoint + menuItemWidth + touchPointView.frame.height
+        let touchWidth  = distanceToTouchPoint + menuItemWidth + 20
+        let touchHeight = distanceToTouchPoint + menuItemWidth + 20
         
         let verticalDirection   = determineVerticalDirection  (touchHeight)
         let horisontalDirection = determineHorisontalDirection(touchWidth )
@@ -298,28 +256,20 @@ class JonContextMenuView:UIView {
     private func showLabel(with title:String){
         self.label.text = title
         
-        let labelWidth  = self.label.intrinsicContentSize.width
         let labelHeight = self.label.intrinsicContentSize.height
 
-        let labelSize   = CGSize(width: labelWidth, height: labelHeight)
+        let labelSize   = CGSize(width: UIScreen.main.bounds.width - 40, height: labelHeight)
         var labelOrigin = CGPoint()
         
-        if touchPoint.x > UIScreen.main.bounds.width/2{ // Align on the left
-            self.label.textAlignment = .left
-            labelOrigin.x = calculateLabelLeftPosition(labelWidth)
-        }
-        else{ // Align on the right
-            self.label.textAlignment = .right
-            labelOrigin.x = calculateLabelRightPosition(labelWidth)
-        }
+        self.label.textAlignment = .left
+        labelOrigin.x = 20
         
         if touchPoint.y > UIScreen.main.bounds.height/2.7{ //Show Label at the top
             let topItem = properties.items.min(by: { (a, b) -> Bool in
                 return a.center.y < b.center.y
             })
             labelOrigin.y = topItem!.center.y - (labelHeight + 50)
-        }
-        else{ // Show Label at the bottom
+        } else { // Show Label at the bottom
             let bottomItem = properties.items.max(by: { (a, b) -> Bool in
                 return a.center.y < b.center.y
             })
