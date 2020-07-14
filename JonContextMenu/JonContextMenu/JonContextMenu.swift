@@ -114,9 +114,6 @@ import UIKit.UIGestureRecognizerSubclass
     
     @objc open class Builder:UILongPressGestureRecognizer{
         
-        /// The wrapper for the JonContextMenu
-        private var window:UIWindow!
-        
         /// The selected menu item
         private var currentItem:JonItem?
         
@@ -131,16 +128,16 @@ import UIKit.UIGestureRecognizerSubclass
         
       @objc  init(_ properties:JonContextMenu){
             super.init(target: nil, action: nil)
-            guard let window = UIApplication.shared.keyWindow else{
-                fatalError("No access to UIApplication Window")
-            }
-            self.window     = window
             self.properties = properties
             addTarget(self, action: #selector(setupTouchAction))
         }
         
         /// Handle the touch events on the view
         @objc private func setupTouchAction(){
+            guard let window = UIApplication.shared.keyWindow else{
+                return
+            }
+
             let location = self.location(in: window)
             switch self.state {
                 case .began:
@@ -220,7 +217,11 @@ import UIKit.UIGestureRecognizerSubclass
             }
             currentItem     = nil
             contextMenuView = JonContextMenuView(properties, touchPoint: location)
-            
+
+            guard let window = UIApplication.shared.keyWindow else{
+                return
+            }
+
             window.addSubview(contextMenuView!)
             properties.delegate?.menuOpened()
         }
